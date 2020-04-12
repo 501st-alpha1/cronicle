@@ -57,10 +57,15 @@ def frequency_folder_days(ffolder):
 def file_create_day(filepath):
     """Return file creation date with a daily precision.
     """
+    realpath = path.realpath(filepath)
+    if not path.exists(realpath):
+        logger.info('No source file found at %s, deleting obsolete symlink %s.' % (realpath, filepath))
+        unlink(filepath)
+        return None
     try:
-        filedate = lstat(path.realpath(filepath)).st_birthtime
+        filedate = lstat(realpath).st_birthtime
     except AttributeError:
-        filedate = lstat(path.realpath(filepath)).st_mtime
+        filedate = lstat(realpath).st_mtime
     return datetime.fromtimestamp(filedate).replace(hour=0, minute=0, second=0, microsecond=0)
 
 
@@ -71,7 +76,9 @@ def archives_create_days(folder, pattern='*'):
     abs_pattern = path.join(folder, path.basename(pattern))
     for x in glob.glob(abs_pattern):
         if path.islink(x):
-            creation_dates[file_create_day(x)] = x
+            file_day = file_create_day(x)
+            if file_day is not None:
+                creation_dates[file_day] = x
     return OrderedDict(sorted(creation_dates.items()))
 
 
@@ -81,7 +88,11 @@ def delta_days(filename, folder, cfg):
     archives = archives_create_days(folder, cfg['pattern'])
     if archives:
         last_archive_day = list(archives.keys())[-1]
-        return (file_create_day(filename) - last_archive_day).days
+        filename_day = file_create_day(filename)
+        # Handle deleted files.
+        if filename_day is None:
+            return None
+        return (filename_day - last_archive_day).days
 
 
 def timed_symlink(filename, ffolder, cfg):
