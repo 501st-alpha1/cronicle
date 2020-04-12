@@ -176,7 +176,7 @@ def find_config(filename, cfg=None):
                      ' the patterns present in %s.' % CONFIG_PATH),
                epilog=('See https://github.com/Kraymer/cronicle/blob/master/README.md#usage for '
                        'more infos'))
-@click.argument('filenames', type=click.Path(exists=True), metavar='FILES', nargs=-1)
+@click.argument('filenames', type=click.Path(exists=False), metavar='FILES', nargs=-1)
 @click.option('-r', '--remove', '_remove',
     help='Remove previous file backup when no symlink points to it.',
     default=False, is_flag=True)
@@ -188,6 +188,11 @@ def cronicle_cli(filenames, _remove, dry_run, verbose):
     set_logging(max(verbose, dry_run))
     if dry_run:  # disable functions performing filesystem operations
         globals().update({func: lambda *x: None for func in ('remove', 'symlink', 'unlink')})
+
+    expanded_filenames = []
+    for filename in filenames:
+        expanded_filenames += glob.glob(filename)
+    filenames = expanded_filenames
 
     for filename in filenames:
         filename = path.abspath(filename)
