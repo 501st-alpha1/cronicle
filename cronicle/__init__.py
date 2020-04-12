@@ -112,7 +112,8 @@ def rotate(filename, ffolder, _remove, cfg):
     others_ffolders = [x.split('|')[0].upper() for x in set(cfg.keys()) - set([ffolder])]
     target_dir = path.abspath(path.join(path.dirname(filename), ffolder.split('|')[0]))
     # sort new -> old
-    links = list(archives_create_days(target_dir, cfg['pattern']).values())[::-1]
+    abs_pattern = path.join(target_dir, path.basename(cfg['pattern']))
+    links = glob.glob(abs_pattern)
 
     for link in links[cfg[ffolder.lower()]:]:  # skip the n most recents
         filepath = path.realpath(link)
